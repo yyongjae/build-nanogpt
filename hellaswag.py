@@ -36,7 +36,7 @@ from torch.nn import functional as F
 from transformers import GPT2LMHeadModel
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
+DATA_CACHE_DIR = "/data2/hellaswag"
 
 def download_file(url: str, fname: str, chunk_size=1024):
     """Helper function to download a file from a given url"""
@@ -63,7 +63,8 @@ enc = tiktoken.get_encoding("gpt2")
 
 def download(split):
     """Downloads HellaSwag DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    # os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    DATA_CACHE_DIR = "/data2/hellaswag"
     data_url = hellaswags[split]
     data_filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl")
     if not os.path.exists(data_filename):

@@ -7,8 +7,38 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from hellaswag import render_example, iterate_examples
-# -----------------------------------------------------------------------------
-
+''' -----------------------------------------------------------------------------
+transformer.wte.weight torch.Size([50257, 768])
+transformer.wpe.weight torch.Size([1024, 768])
+transformer.h.0.ln_1.weight torch.Size([768])
+transformer.h.0.ln_1.bias torch.Size([768])
+transformer.h.0.attn.c_attn.weight torch.Size([768, 2304])
+transformer.h.0.attn.c_attn.bias torch.Size([2304])
+transformer.h.0.attn.c_proj.weight torch.Size([768, 768])
+transformer.h.0.attn.c_proj.bias torch.Size([768])
+transformer.h.0.ln_2.weight torch.Size([768])
+transformer.h.0.ln_2.bias torch.Size([768])
+transformer.h.0.mlp.c_fc.weight torch.Size([768, 3072])
+transformer.h.0.mlp.c_fc.bias torch.Size([3072])
+transformer.h.0.mlp.c_proj.weight torch.Size([3072, 768])
+transformer.h.0.mlp.c_proj.bias torch.Size([768])
+transformer.h.1.ln_1.weight torch.Size([768])
+transformer.h.1.ln_1.bias torch.Size([768])
+transformer.h.1.attn.c_attn.weight torch.Size([768, 2304])
+transformer.h.1.attn.c_attn.bias torch.Size([2304])
+transformer.h.1.attn.c_proj.weight torch.Size([768, 768])
+transformer.h.1.attn.c_proj.bias torch.Size([768])
+transformer.h.1.ln_2.weight torch.Size([768])
+transformer.h.1.ln_2.bias torch.Size([768])
+transformer.h.1.mlp.c_fc.weight torch.Size([768, 3072])
+transformer.h.1.mlp.c_fc.bias torch.Size([3072])
+transformer.h.1.mlp.c_proj.weight torch.Size([3072, 768])
+...
+transformer.h.11.mlp.c_proj.bias torch.Size([768])
+transformer.ln_f.weight torch.Size([768])
+transformer.ln_f.bias torch.Size([768])
+lm_head.weight torch.Size([50257, 768])
+'''
 class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
@@ -83,12 +113,16 @@ class GPT(nn.Module):
         self.config = config
 
         self.transformer = nn.ModuleDict(dict(
+            # token embedding layer
             wte = nn.Embedding(config.vocab_size, config.n_embd),
+            # position embedding layer
             wpe = nn.Embedding(config.block_size, config.n_embd),
+            # transformer blocks
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = nn.LayerNorm(config.n_embd),
         ))
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        
+        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False) # 마지막엔 bias ㄴㄴ
 
         # weight sharing scheme
         self.transformer.wte.weight = self.lm_head.weight
@@ -220,7 +254,7 @@ class DataLoaderLite:
         assert split in {'train', 'val'}
 
         # get the shard filenames
-        data_root = "edu_fineweb10B"
+        data_root = "edu_fineweb10B/edu_fineweb10B"
         shards = os.listdir(data_root)
         shards = [s for s in shards if split in s]
         shards = sorted(shards)
@@ -322,7 +356,7 @@ if torch.cuda.is_available():
 enc = tiktoken.get_encoding("gpt2")
 
 total_batch_size = 524288 # 2**19, ~0.5M, in number of tokens
-B = 64 # micro batch size
+B = 16 # micro batch size
 T = 1024 # sequence length
 assert total_batch_size % (B * T * ddp_world_size) == 0, "make sure total_batch_size is divisible by B * T * ddp_world_size"
 grad_accum_steps = total_batch_size // (B * T * ddp_world_size)
